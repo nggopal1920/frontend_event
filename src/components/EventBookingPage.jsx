@@ -11,22 +11,27 @@ export default function EventBookingPage() {
   const [successTicket, setSuccessTicket] = useState(null);
   const [allEvents, setAllEvents] = useState([]);
 
-  // Load events from localStorage (created by Organizer) on page load
+  // Load events from Render Backend API
   useEffect(() => {
-    const savedEvents = JSON.parse(localStorage.getItem('myEvents')) || [
-      {
-        id: 1,
-        title: "Tech Summit 2026",
-        description: "Join the biggest tech conference of the year with top industry leaders.",
-        date: "25th Aug 2026",
-        location: "Auditorium Hall, Delhi",
-        ticketPrice: 499,
-        totalTickets: 100,
-        ticketsSold: 85,
-        link: "https://yourdomain.com/event/tech-summit-2026"
-      }
-    ];
-    setAllEvents(savedEvents);
+    fetch('https://backend-events.onrender.com/api/events')
+      .then((res) => res.json())
+      .then((data) => setAllEvents(data))
+      .catch((err) => {
+        console.error("Error fetching events:", err);
+        setAllEvents([
+          {
+            id: 1,
+            title: "Tech Summit 2026",
+            description: "Join the biggest tech conference of the year with top industry leaders.",
+            date: "25th Aug 2026",
+            location: "Auditorium Hall, Delhi",
+            ticketPrice: 499,
+            totalTickets: 100,
+            ticketsSold: 85,
+            link: "https://yourdomain.com/event/tech-summit-2026"
+          }
+        ]);
+      });
   }, []);
 
   // Function to verify and fetch event by link from stored events
@@ -36,7 +41,6 @@ export default function EventBookingPage() {
     
     const cleanInputLink = pastedLink.trim().toLowerCase();
 
-    // Match with stored events
     const foundEvent = allEvents.find(
       (ev) => ev.link.toLowerCase() === cleanInputLink || 
               cleanInputLink.includes(ev.title.toLowerCase().replace(/\s+/g, '-'))
@@ -57,14 +61,21 @@ export default function EventBookingPage() {
     setTimeout(() => {
       setIsSubmitting(false);
 
-      // Update tickets sold count in localStorage database
+      // Update backend database via API
+      fetch(`https://backend-events.onrender.com/api/events/${activeEvent.id}/book`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+      })
+        .then((res) => res.json())
+        .catch((err) => console.error("Error updating ticket count:", err));
+
       const updatedEvents = allEvents.map((ev) => {
         if (ev.id === activeEvent.id) {
           return { ...ev, ticketsSold: (ev.ticketsSold || 0) + 1 };
         }
         return ev;
       });
-      localStorage.setItem('myEvents', JSON.stringify(updatedEvents));
+      
       setAllEvents(updatedEvents);
 
       setSuccessTicket({
@@ -121,7 +132,6 @@ export default function EventBookingPage() {
               </button>
             </form>
 
-            {/* List active links available in storage for easy testing */}
             <div className="mt-6 p-4 bg-gray-50 rounded-xl border border-dashed border-gray-300">
               <p className="font-semibold text-gray-700 text-xs mb-2">🔗 Active Event Links in Database:</p>
               <div className="space-y-1">
