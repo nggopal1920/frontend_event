@@ -11,9 +11,9 @@ export default function EventBookingPage() {
   const [successTicket, setSuccessTicket] = useState(null);
   const [allEvents, setAllEvents] = useState([]);
 
-  // Load events from Render Backend API
+  // Load events from Render Backend API (Updated URL)
   useEffect(() => {
-    fetch('https://backend-events.onrender.com/api/events')
+    fetch('https://backend-events-b3vi.onrender.com/api/events')
       .then((res) => res.json())
       .then((data) => setAllEvents(data))
       .catch((err) => {
@@ -61,8 +61,8 @@ export default function EventBookingPage() {
     setTimeout(() => {
       setIsSubmitting(false);
 
-      // Update backend database via API
-      fetch(`https://backend-events.onrender.com/api/events/${activeEvent.id}/book`, {
+      // Update backend database via API (Updated URL)
+      fetch(`https://backend-events-b3vi.onrender.com/api/events/${activeEvent.id}/book`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
       })
