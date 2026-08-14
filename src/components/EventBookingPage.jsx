@@ -11,11 +11,29 @@ export default function EventBookingPage() {
   const [successTicket, setSuccessTicket] = useState(null);
   const [allEvents, setAllEvents] = useState([]);
 
-  // Load events from Render Backend API (Updated URL)
+  // Load events from Render Backend API
   useEffect(() => {
     fetch('https://backend-events-b3vi.onrender.com/api/events')
       .then((res) => res.json())
-      .then((data) => setAllEvents(data))
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          setAllEvents(data);
+        } else {
+          setAllEvents([
+            {
+              id: 1,
+              title: "Tech Summit 2026",
+              description: "Join the biggest tech conference of the year with top industry leaders.",
+              date: "25th Aug 2026",
+              location: "Auditorium Hall, Delhi",
+              ticketPrice: 499,
+              totalTickets: 100,
+              ticketsSold: 85,
+              link: "https://backend-events-b3vi.onrender.com/event/tech-summit-2026"
+            }
+          ]);
+        }
+      })
       .catch((err) => {
         console.error("Error fetching events:", err);
         setAllEvents([
@@ -28,28 +46,40 @@ export default function EventBookingPage() {
             ticketPrice: 499,
             totalTickets: 100,
             ticketsSold: 85,
-            link: "https://yourdomain.com/event/tech-summit-2026"
+            link: "https://backend-events-b3vi.onrender.com/event/tech-summit-2026"
           }
         ]);
       });
   }, []);
 
-  // Function to verify and fetch event by link from stored events
+  // Smart Link Verification Function
   const handleVerifyLink = (e) => {
     e.preventDefault();
     setErrorMsg('');
     
     const cleanInputLink = pastedLink.trim().toLowerCase();
 
-    const foundEvent = allEvents.find(
-      (ev) => ev.link.toLowerCase() === cleanInputLink || 
-              cleanInputLink.includes(ev.title.toLowerCase().replace(/\s+/g, '-'))
-    );
+    if (!cleanInputLink) {
+      setErrorMsg('Please enter a valid link.');
+      return;
+    }
+
+    const foundEvent = allEvents.find((ev) => {
+      const evLink = (ev.link || '').toLowerCase();
+      const evTitle = (ev.title || '').toLowerCase().replace(/\s+/g, '-');
+      
+      return (
+        evLink === cleanInputLink ||
+        cleanInputLink.includes(evLink) ||
+        cleanInputLink.includes(evTitle) ||
+        cleanInputLink.includes(`id=${ev.id}`)
+      );
+    });
 
     if (foundEvent) {
       setActiveEvent(foundEvent);
     } else {
-      setErrorMsg('Invalid or expired event link! Please create an event first or copy the correct link.');
+      setErrorMsg('Invalid or expired event link! Please click on the active links below to auto-fill.');
     }
   };
 
@@ -61,7 +91,7 @@ export default function EventBookingPage() {
     setTimeout(() => {
       setIsSubmitting(false);
 
-      // Update backend database via API (Updated URL)
+      // Update backend database via API
       fetch(`https://backend-events-b3vi.onrender.com/api/events/${activeEvent.id}/book`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -113,7 +143,7 @@ export default function EventBookingPage() {
                   required
                   value={pastedLink}
                   onChange={(e) => setPastedLink(e.target.value)}
-                  placeholder="e.g. https://yourdomain.com/event/..."
+                  placeholder="e.g. https://... or click below"
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:outline-none text-sm"
                 />
               </div>
@@ -133,16 +163,16 @@ export default function EventBookingPage() {
             </form>
 
             <div className="mt-6 p-4 bg-gray-50 rounded-xl border border-dashed border-gray-300">
-              <p className="font-semibold text-gray-700 text-xs mb-2">🔗 Active Event Links in Database:</p>
-              <div className="space-y-1">
+              <p className="font-semibold text-gray-700 text-xs mb-2">🔗 Active Event Links in Database (Click to Auto-fill):</p>
+              <div className="space-y-2">
                 {allEvents.map((ev) => (
-                  <div key={ev.id} className="text-xs">
-                    <span className="font-medium text-gray-800">{ev.title}:</span>
+                  <div key={ev.id} className="text-xs bg-white p-2 rounded border border-gray-200">
+                    <span className="font-bold text-gray-800">{ev.title}</span>
                     <span 
-                      onClick={() => setPastedLink(ev.link)} 
-                      className="text-indigo-600 hover:underline cursor-pointer block truncate"
+                      onClick={() => setPastedLink(ev.link || `https://backend-events-b3vi.onrender.com/event/${ev.id}`)} 
+                      className="text-indigo-600 hover:underline cursor-pointer block truncate mt-1"
                     >
-                      {ev.link}
+                      {ev.link || `https://backend-events-b3vi.onrender.com/event/${ev.id}`}
                     </span>
                   </div>
                 ))}
