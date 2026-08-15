@@ -7,48 +7,58 @@ export default function OrganizerDashboard() {
   const [totalTickets, setTotalTickets] = useState('');
   const [price, setPrice] = useState('');
 
-  // Load existing events from localStorage on start
+  // Load existing events from Backend API
+  const fetchEvents = () => {
+    fetch('https://backend-events-b3vi.onrender.com/api/events')
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data)) {
+          setEvents(data);
+        }
+      })
+      .catch((err) => console.error("Error fetching events:", err));
+  };
+
   useEffect(() => {
-    const savedEvents = JSON.parse(localStorage.getItem('myEvents')) || [
-      {
-        id: 1,
-        title: "Tech Summit 2026",
-        description: "Join the biggest tech conference of the year.",
-        date: "25th Aug 2026",
-        location: "Delhi",
-        ticketPrice: 499,
-        totalTickets: 100,
-        ticketsSold: 85,
-        link: "https://yourdomain.com/event/tech-summit-2026"
-      }
-    ];
-    setEvents(savedEvents);
+    fetchEvents();
   }, []);
 
-  const handleCreateEvent = (e) => {
+  const handleCreateEvent = async (e) => {
     e.preventDefault();
     const slug = title.toLowerCase().replace(/\s+/g, '-');
-    const newEvent = {
-      id: Date.now(),
+    
+    const newEventData = {
       title,
       description: "Exciting event organized via dashboard.",
       date: "30th Sep 2026",
       location: "Main Auditorium",
       ticketPrice: Number(price),
       totalTickets: Number(totalTickets),
-      ticketsSold: 0,
-      link: `https://yourdomain.com/event/${slug}`
+      link: `https://backend-events-b3vi.onrender.com/event/${slug}`
     };
 
-    const updatedEvents = [...events, newEvent];
-    setEvents(updatedEvents);
-    localStorage.setItem('myEvents', JSON.stringify(updatedEvents));
-
-    setTitle('');
-    setTotalTickets('');
-    setPrice('');
-    setShowModal(false);
-    alert("Event created successfully! Link generated.");
+    try {
+      const response = await fetch('https://backend-events-b3vi.onrender.com/api/events', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newEventData),
+      });
+      
+      const data = await response.json();
+      if (response.ok) {
+        alert("Event successfully created and saved in Database!");
+        setShowModal(false);
+        setTitle('');
+        setTotalTickets('');
+        setPrice('');
+        fetchEvents(); // Refresh list
+      } else {
+        alert("Error: " + data.error);
+      }
+    } catch (err) {
+      console.error("Failed to create event:", err);
+      alert("Server error while saving event.");
+    }
   };
 
   const copyToClipboard = (link) => {
@@ -77,11 +87,11 @@ export default function OrganizerDashboard() {
             <div key={ev.id} className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 flex flex-col justify-between">
               <div>
                 <h3 className="text-xl font-bold text-gray-800">{ev.title}</h3>
-                <p className="text-xs text-gray-400 mt-1">Price: ₹{ev.ticketPrice}</p>
+                <p className="text-xs text-gray-400 mt-1">Price: ₹{ev.ticket_price || ev.ticketPrice}</p>
                 <div className="flex justify-between text-sm text-gray-600 mt-4 bg-gray-50 p-3 rounded-lg">
-                  <span>Total: <b>{ev.totalTickets}</b></span>
-                  <span>Sold: <b className="text-indigo-600">{ev.ticketsSold}</b></span>
-                  <span>Remaining: <b className="text-green-600">{ev.totalTickets - ev.ticketsSold}</b></span>
+                  <span>Total: <b>{ev.total_tickets || ev.totalTickets}</b></span>
+                  <span>Sold: <b className="text-indigo-600">{ev.tickets_sold || ev.ticketsSold || 0}</b></span>
+                  <span>Remaining: <b className="text-green-600">{(ev.total_tickets || ev.totalTickets) - (ev.tickets_sold || ev.ticketsSold || 0)}</b></span>
                 </div>
               </div>
 
