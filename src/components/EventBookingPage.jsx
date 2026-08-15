@@ -26,9 +26,9 @@ export default function EventBookingPage() {
               description: "Join the biggest tech conference of the year with top industry leaders.",
               date: "25th Aug 2026",
               location: "Auditorium Hall, Delhi",
-              ticketPrice: 499,
-              totalTickets: 100,
-              ticketsSold: 85,
+              ticket_price: 499,
+              total_tickets: 100,
+              tickets_sold: 85,
               link: "https://backend-events-b3vi.onrender.com/event/tech-summit-2026"
             }
           ]);
@@ -36,23 +36,9 @@ export default function EventBookingPage() {
       })
       .catch((err) => {
         console.error("Error fetching events:", err);
-        setAllEvents([
-          {
-            id: 1,
-            title: "Tech Summit 2026",
-            description: "Join the biggest tech conference of the year with top industry leaders.",
-            date: "25th Aug 2026",
-            location: "Auditorium Hall, Delhi",
-            ticketPrice: 499,
-            totalTickets: 100,
-            ticketsSold: 85,
-            link: "https://backend-events-b3vi.onrender.com/event/tech-summit-2026"
-          }
-        ]);
       });
   }, []);
 
-  // Smart Link Verification Function
   const handleVerifyLink = (e) => {
     e.preventDefault();
     setErrorMsg('');
@@ -83,48 +69,39 @@ export default function EventBookingPage() {
     }
   };
 
-  // Function to handle booking and update ticket count
   const handleBooking = (e) => {
     e.preventDefault();
     setIsSubmitting(true);
 
-    setTimeout(() => {
-      setIsSubmitting(false);
-
-      // Update backend database via API
-      fetch(`https://backend-events-b3vi.onrender.com/api/events/${activeEvent.id}/book`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+    // Update backend database via API
+    fetch(`https://backend-events-b3vi.onrender.com/api/events/${activeEvent.id}/book`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+    })
+      .then((res) => res.json())
+      .then(() => {
+        setIsSubmitting(false);
+        setSuccessTicket({
+          name: buyerName,
+          email: buyerEmail,
+          eventTitle: activeEvent.title,
+          pricePaid: activeEvent.ticket_price || activeEvent.ticketPrice || 499,
+          date: activeEvent.date || "Upcoming Date",
+          location: activeEvent.location || "Online / Venue",
+          ticketId: 'TICKET-' + Math.floor(100000 + Math.random() * 900000)
+        });
       })
-        .then((res) => res.json())
-        .catch((err) => console.error("Error updating ticket count:", err));
-
-      const updatedEvents = allEvents.map((ev) => {
-        if (ev.id === activeEvent.id) {
-          return { ...ev, ticketsSold: (ev.ticketsSold || 0) + 1 };
-        }
-        return ev;
+      .catch((err) => {
+        console.error("Error updating ticket count:", err);
+        setIsSubmitting(false);
+        alert("Booking failed. Please try again.");
       });
-      
-      setAllEvents(updatedEvents);
-
-      setSuccessTicket({
-        name: buyerName,
-        email: buyerEmail,
-        eventTitle: activeEvent.title,
-        pricePaid: activeEvent.ticketPrice || 499,
-        date: activeEvent.date || "Upcoming Date",
-        location: activeEvent.location || "Online / Venue",
-        ticketId: 'TICKET-' + Math.floor(100000 + Math.random() * 900000)
-      });
-    }, 1500);
   };
 
   return (
     <div className="min-h-screen bg-gray-50 py-10 px-4 sm:px-6 lg:px-8">
       <div className="max-w-xl mx-auto">
         
-        {/* Step 1: Link Input Screen */}
         {!activeEvent && !successTicket && (
           <div className="bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
             <span className="bg-indigo-50 text-indigo-600 text-xs font-semibold px-3 py-1 rounded-full uppercase tracking-wider">
@@ -181,7 +158,6 @@ export default function EventBookingPage() {
           </div>
         )}
 
-        {/* Step 2: Event Details & Payment Screen */}
         {activeEvent && !successTicket && (
           <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100">
             <div className="bg-gradient-to-r from-indigo-600 to-purple-600 p-6 text-white flex justify-between items-start">
@@ -209,12 +185,12 @@ export default function EventBookingPage() {
               <div className="flex justify-between items-center bg-indigo-50/50 p-4 rounded-xl border border-indigo-100">
                 <div>
                   <p className="text-xs text-gray-500">Fixed Ticket Price</p>
-                  <p className="text-2xl font-bold text-indigo-600">₹{activeEvent.ticketPrice || 499}</p>
+                  <p className="text-2xl font-bold text-indigo-600">₹{activeEvent.ticket_price || activeEvent.ticketPrice || 499}</p>
                 </div>
                 <div className="text-right">
                   <p className="text-xs text-gray-500">Availability</p>
                   <p className="text-sm font-semibold text-green-600">
-                    {(activeEvent.totalTickets || 100) - (activeEvent.ticketsSold || 0)} Tickets Left
+                    {((activeEvent.total_tickets || activeEvent.totalTickets || 100) - (activeEvent.tickets_sold || activeEvent.ticketsSold || 0))} Tickets Left
                   </p>
                 </div>
               </div>
@@ -249,21 +225,20 @@ export default function EventBookingPage() {
                   disabled={isSubmitting}
                   className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-lg shadow-md transition duration-200 disabled:bg-gray-400"
                 >
-                  {isSubmitting ? 'Processing Payment...' : `Pay Exactly ₹{activeEvent.ticketPrice || 499} & Book Ticket`}
+                  {isSubmitting ? 'Processing Payment...' : `Pay Exactly ₹{activeEvent.ticket_price || activeEvent.ticketPrice || 499} & Book Ticket`}
                 </button>
               </form>
             </div>
           </div>
         )}
 
-        {/* Step 3: Success Screen */}
         {successTicket && (
           <div className="bg-white rounded-2xl shadow-xl p-8 border border-green-200 text-center">
             <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto text-3xl mb-4">
               ✓
             </div>
             <h2 className="text-2xl font-bold text-gray-900 mb-1">Ticket Booked Successfully!</h2>
-            <p className="text-gray-500 text-sm mb-6">Payment of <b className="text-gray-800">₹{successTicket.pricePaid}</b> received successfully.</p>
+            <p className="text-gray-500 text-sm mb-6">Payment of <b className="text-gray-800">₹{successTicket.pricePaid}</b> received and saved in database.</p>
 
             <div className="bg-gray-50 border border-gray-200 rounded-xl p-6 text-left space-y-3 mb-6">
               <div className="flex justify-between text-xs text-gray-500 border-b pb-2">
